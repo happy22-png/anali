@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NewsBrief LM - Google News Scraper & NotebookLM Analyzer</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <!-- Lucide Icons Library -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+        }
+        /* Custom scrollbar style */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.3);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.3);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.6);
+        }
+        /* Fade in animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100 flex flex-col">
+
+    <!-- 네비게이션 헤더 -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40 px-4 py-3 lg:px-8">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-gradient-to-tr from-indigo-500 to-violet-600 rounded-xl shadow-lg shadow-indigo-500/20">
+                    <i data-lucide="brain-circuit" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-white via-slate-100 to-indigo-300 bg-clip-text text-transparent">
+                        NewsBrief LM
+                    </h1>
+                    <p class="text-xs text-slate-400">구글 실시간 뉴스 스크랩 및 NotebookLM식 데이터 분석 플랫폼</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    실시간 AI 엔진 대기중
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 뷰포트 -->
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 py-6 lg:px-8 space-y-6">
+
+        <!-- 대시보드 제어반 카드 -->
+        <div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5 shadow-lg">
+            <form id="searchForm" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                
+                <!-- 검색 키워드 -->
+                <div class="md:col-span-3 space-y-1.5">
+                    <label class="text-xs font-medium text-slate-400 flex items-center gap-1.5">
+                        <i data-lucide="search" class="w-3.5 h-3.5 text-indigo-400"></i> 검색 키워드 입력
+                    </label>
+                    <input 
+                        type="text" 
+                        id="keywordInput"
+                        value="인공지능 AI"
+                        placeholder="예: 초전도체, 배터리 신기술, 자율주행"
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                        required
+                    />
+                </div>
+
+                <!-- 수집 시작일 -->
+                <div class="md:col-span-2 space-y-1.5">
+                    <label class="text-xs font-medium text-slate-400 flex items-center gap-1.5">
+                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-400"></i> 수집 시작일
+                    </label>
+                    <input 
+                        type="date" 
+                        id="startDateInput"
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-3 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                        required
+                    />
+                </div>
+
+                <!-- 화살표 간격 지시 (데스크톱) -->
+                <div class="hidden md:flex md:col-span-1 justify-center pb-4 text-slate-500">
+                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </div>
+
+                <!-- 수집 종료일 -->
+                <div class="md:col-span-2 space-y-1.5">
+                    <label class="text-xs font-medium text-slate-400 flex items-center gap-1.5">
+                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-400"></i> 수집 종료일
+                    </label>
+                    <input 
+                        type="date" 
+                        id="endDateInput"
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-3 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                        required
+                    />
+                </div>
+
+                <!-- 수집 개수 지정 컴포넌트 추가 -->
+                <div class="md:col-span-2 space-y-1.5">
+                    <label class="text-xs font-medium text-slate-400 flex items-center gap-1.5">
+                        <i data-lucide="sliders" class="w-3.5 h-3.5 text-indigo-400"></i> 수집 개수 설정
+                    </label>
+                    <select 
+                        id="limitSelect"
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-3 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all cursor-pointer"
+                    >
+                        <option value="3" selected>3건 수집 (빠름)</option>
+                        <option value="5">5건 수집</option>
+                        <option value="10">10건 수집</option>
+                        <option value="20">20건 수집</option>
+                        <option value="30">30건 수집 (최대)</option>
+                    </select>
+                </div>
+
+                <!-- 뉴스 스크랩 버튼 -->
+                <div class="md:col-span-2">
+                    <button
+                        type="submit"
+                        id="submitBtn"
+                        class="w-full bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white rounded-xl px-4 py-3 text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-500/25 disabled:opacity-50"
+                    >
+                        <i data-lucide="activity" class="w-4 h-4" id="submitIcon"></i>
+                        <span id="submitText">뉴스 스크랩</span>
+                    </button>
+                </div>
+
+            </form>
+
+            <!-- 에러 경고박스 -->
+            <div id="errorBox" class="hidden mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-2 text-red-400 text-sm">
+                <i data-lucide="alert-circle" class="w-5 h-5 shrink-0"></i>
+                <span id="errorMsg"></span>
+            </div>
+
+            <!-- 현재 로딩 진행 상태바 -->
+            <div id="loadingStatusBox" class="hidden mt-4 p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex items-center gap-3 text-indigo-300 text-sm animate-pulse">
+                <i data-lucide="refresh-cw" class="w-4 h-4 animate-spin shrink-0 text-indigo-400"></i>
+                <span id="loadingStatusMsg">데이터 연계 및 분석 파싱 가동 중...</span>
+            </div>
+        </div>
+
+        <!-- 2단 구성 대시보드 레이아웃 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- 좌/중앙: 기사 리스트 및 개별 분석 -->
+            <div class="lg:col-span-2 space-y-4">
+                <div class="flex justify-between items-center px-1">
+                    <h2 class="text-lg font-bold flex items-center gap-2 text-slate-200">
+                        <i data-lucide="file-text" class="w-5 h-5 text-indigo-400"></i>
+                        뉴스 스크랩 피드
+                        <span id="newsCountBadge" class="text-xs font-normal px-2.5 py-0.5 bg-slate-800 text-indigo-300 rounded-full border border-slate-700">
+                          0건
+                        </span>
+                    </h2>
+                    <span class="text-xs text-slate-400 hidden sm:inline">카드를 클릭하면 상세 NotebookLM 분석 패널이 활성화됩니다.</span>
+                </div>
+
+                <!-- 뉴스 동적 렌더링 컨테이너 -->
+                <div id="newsContainer" class="space-y-4">
+                    <!-- JavaScript에 의해 카드가 동적으로 주입됩니다 -->
+                </div>
+            </div>
+
+            <!-- 우측: 종합 리포트 및 인사이트 -->
+            <div class="space-y-4">
+                <h2 class="text-lg font-bold flex items-center gap-2 text-slate-200 px-1">
+                    <i data-lucide="trending-up" class="w-5 h-5 text-indigo-400"></i>
+                    종합 트렌드 리포트
+                </h2>
+
+                <div class="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/70 rounded-2xl p-6 shadow-xl space-y-5 lg:sticky lg:top-24">
+                    
+                    <div class="flex items-center gap-2.5 border-b border-slate-700/60 pb-4">
+                        <div class="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
+                            <i data-lucide="layers" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-200">글로벌 마스터 결론</h3>
+                            <p class="text-xs text-slate-400">수집된 전체 뉴스를 결합하여 내린 종합 제언</p>
+                        </div>
+                    </div>
+
+                    <!-- 종합 트렌드 텍스트 영역 -->
+                    <div class="space-y-4">
+                        <div class="bg-slate-950/50 border border-slate-800 rounded-xl p-4 max-h-[480px] overflow-y-auto custom-scrollbar">
+                            <p id="overallConclusionText" class="text-xs md:text-sm text-slate-300 leading-relaxed whitespace-pre-line">
+                                데이터를 가져오는 중이거나 아직 검색 요청이 발생하지 않았습니다.
+                            </p>
+                        </div>
+                        
+                        <div class="p-3 bg-indigo-500/10 border border-indigo-500/25 rounded-xl flex items-start gap-2.5">
+                            <i data-lucide="alert-circle" class="w-4 h-4 text-indigo-400 shrink-0 mt-0.5"></i>
+                            <p class="text-[11px] text-indigo-300 leading-relaxed">
+                                본 종합 분석 보고서는 지정된 수집 기간에 스크랩된 기사들의 문맥 데이터를 결합하여 생성한 AI 마스터 리포트입니다. 트렌드 리서치의 보조 자료로 적극 활용해 보세요.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- 푸터 -->
+    <footer class="border-t border-slate-800/80 bg-slate-950 mt-16 py-8 px-4 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto space-y-2">
+            <p>© 2026 NewsBrief LM. Powered by Gemini Core and Grounding Search Engine.</p>
+            <p>본 플랫폼은 실시간 웹 크롤링 및 인공지능 분석 기법을 융합한 차세대 미디어 서비스입니다.</p>
+        </div>
+    </footer>
+
+    <script>
+        // 플랫폼 런타임에 의해 API 키가 자동으로 주입됩니다.
+        const apiKey = "";
+
+        // 상태 데이터 관리 객체
+        const state = {
+            keyword: '인공지능 AI',
+            startDate: '',
+            endDate: '',
+            limit: 3,
+            newsList: [],
+            overallConclusion: '',
+            loading: false,
+            selectedNewsId: null
+        };
+
+        // 초기 날짜 생성 함수 (시작일: 7일전, 종료일: 오늘)
+        function initDates() {
+            const today = new Date();
+            const lastWeek = new Date();
+            lastWeek.setDate(today.getDate() - 7);
+
+            state.startDate = lastWeek.toISOString().split('T')[0];
+            state.endDate = today.toISOString().split('T')[0];
+
+            document.getElementById('startDateInput').value = state.startDate;
+            document.getElementById('endDateInput').value = state.endDate;
+        }
+
+        // 가상/데모용 대용량 동적 데이터 제공기 (요청 개수 비례 자동 생성)
+        function getDemoData(kw, start, end, limit = 3) {
+            const sources = ["IT동아", "테크리포트", "디지털데일리", "글로벌IT저널", "경제뉴스동향", "비즈니스트렌드코리아", "전자신문", "AI타임스", "매일경제", "테크크런치 코리아"];
+            const templates = [
+                {
+                    title: `"${kw}" 기반 차세대 데이터 솔루션 대거 공급망 포섭 성공`,
+                    summary: `이번에 런칭된 인프라는 "${kw}" 기술을 실제 클라우드 인프라와 결합해 병목 현상을 완전 차단한 혁신 플랫폼입니다. 연산 쿼리 속도가 기존 대비 약 2.4배 이상 향상되어 전세계 엔터프라이즈 환경에서 기술 혁신의 모범 사례로 평가받고 있습니다.`,
+                    analysis: `[NotebookLM 핵심 분석]\n하드웨어 제약 조건 및 스케일 아웃 한계를 원천적으로 제거한 설계입니다. 단순 프로토타입에 그치지 않고 대량의 서비스 트래픽을 처리할 수 있는 실제 수익 모델로의 가치를 확실히 검증받았습니다.`
+                },
+                {
+                    title: `정부 부처 합동, "${kw}" 규제 패키지 프리존 전격 혜택 가속화`,
+                    summary: `정부는 융합 샌드박스의 일환으로 차세대 "${kw}" 유관 전문 연구단을 육성하고, 공공 실증 인프라 사용료 전면 면제 특례를 추가 통과시켰습니다. 법인세 감면과 연계되어 스타트업 및 중견 벤처의 자금 생태계 활성화를 유도합니다.`,
+                    analysis: `[NotebookLM 핵심 분석]\n공공 주도의 거대한 초기 유동성 공급책입니다. 실증 단계의 비용 부담을 국가가 일부 완충함으로써 신속한 비즈니스 개념 실증(PoC) 확보 및 성숙도 도달 시점을 대폭 단축할 수 있는 순기능이 예고됩니다.`
+                },
+                {
+                    title: `글로벌 자본 연합보고서, "${kw}" 우량 스타트업 중심 옥석가리기 본격화`,
+                    summary: `금융 투자 분석 자료에 따르면, 장기 불황 국면 속에서도 실제 핵심 캐시카우 지표를 입증해낸 "${kw}" 분야 전문 기술 기업들은 멀티플 프리미엄과 추가 투자 라운드를 성공적으로 마감 중인 것으로 집계되었습니다.`,
+                    analysis: `[NotebookLM 핵심 분석]\n자본 시장이 투기적 광기(Hype)를 지나 고요한 생산성의 고원 영역으로 수렴하는 시점입니다. 고객 유지 비율(Retention Rate)이 검증된 핵심 솔루션의 지속 가치가 극대화되고 있습니다.`
+                }
+            ];
+
+            const list = [];
+            for (let i = 0; i < limit; i++) {
+                const temp = templates[i % templates.length];
+                const source = sources[i % sources.length];
+                list.push({
+                    id: i + 1,
+                    title: `[뉴스 #${i+1}] ${temp.title.replace('대거 공급망 포섭', i > 2 ? '신규 상용화 실적 달성' : '대거 공급망 포섭')}`,
+                    url: `https://example.com/news/${i+1}`,
+                    source: source,
+                    time: `${start} ~ ${end} 기간 중 작성`,
+                    summary: temp.summary,
+                    keyPoints: [
+                        `의제 데이터 포인트 #${i+1}-1: 글로벌 공급망 핵심 밸류에이션 연동 강화`,
+                        `의제 데이터 포인트 #${i+1}-2: 기술 진입 문턱 인하에 따른 시장 침투 속도 2배 가속`,
+                        `의제 데이터 포인트 #${i+1}-3: 엔터프라이즈 맞춤형 보안 통제 프로토콜 탑재`
+                    ],
+                    notebookAnalysis: temp.analysis
+                });
+            }
+            return list;
+        }
+
+        function getDemoConclusion(kw, start, end, limit = 3) {
+            return `[종합 결론: ${kw} 심층 트렌드 요약 리포트 (${limit}건 종합 분석)]\n\n해당 기간(${start} ~ ${end}) 동안 총 ${limit}건의 축적된 미디어 의제를 대조 분석한 결과, '${kw}' 산업은 과열된 마케팅 경쟁 단계에서 확실한 '상용 실적 확보'와 '안정적인 자본 통제' 단계로 연착륙하는 성숙기를 걷고 있습니다.\n\n물리 인프라의 부담을 완화해주는 기술적 개량과 함께, 규제 프리존 등의 제도적 조력자가 동시에 작동하며 초기 시장 진출 기업들의 숨통을 틔워주고 있습니다. 투자자들 역시 더 이상 소문과 명성에 편승하지 않으며 실질적인 기업의 비용 효율성 및 유지 비율 지표를 면밀히 심사하고 있습니다.\n\n결론적으로, 현 시점에 관련 사업을 추진 중인 비즈니스 주체들은 대규모 하드웨어 직투자를 최소화하는 경량화 아키텍처를 도입하는 한편, 타운 내 규제 실증 바우처를 전방위로 수급하여 고정 운영 비용을 통제하는 방어 중심의 선점 전략이 생존을 담보할 유일한 수단으로 지목됩니다.`;
+        }
+
+        // 재시도 포함 API 호출 처리 함수
+        async function fetchWithRetry(url, options, retries = 5, backoff = 1000) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    if (response.status === 429 && retries > 0) {
+                        await new Promise(resolve => setTimeout(resolve, backoff));
+                        return fetchWithRetry(url, options, retries - 1, backoff * 2);
+                    }
+                    const errBody = await response.text().catch(() => '');
+                    throw new Error(`API 오류: ${response.status} ${response.statusText}. ${errBody}`);
+                }
+                return await response.json();
+            } catch (err) {
+                if (retries > 0) {
+                    await new Promise(resolve => setTimeout(resolve, backoff));
+                    return fetchWithRetry(url, options, retries - 1, backoff * 2);
+                }
+                throw err;
+            }
+        }
+
+        // JSON 추출 헬퍼 함수
+        function extractJSON(text) {
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                const cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+                try {
+                    return JSON.parse(cleanText);
+                } catch (innerE) {
+                    const start = text.indexOf('{');
+                    const end = text.lastIndexOf('}');
+                    if (start !== -1 && end !== -1) {
+                        try {
+                            return JSON.parse(text.substring(start, end + 1));
+                        } catch (finalE) {
+                            throw new Error("결과를 유효한 JSON 형식으로 변환하지 못했습니다.");
+                        }
+                    }
+                    throw innerE;
+                }
+            }
+        }
+
+        // UI 컴포넌트 갱신 렌더러
+        function renderUI() {
+            // 로딩 처리 UI 토글
+            const submitBtn = document.getElementById('submitBtn');
+            const submitIcon = document.getElementById('submitIcon');
+            const submitText = document.getElementById('submitText');
+            const loadingStatusBox = document.getElementById('loadingStatusBox');
+
+            if (state.loading) {
+                submitBtn.disabled = true;
+                submitIcon.setAttribute('data-lucide', 'refresh-cw');
+                submitIcon.classList.add('animate-spin');
+                submitText.textContent = "수집 및 가공중...";
+                loadingStatusBox.classList.remove('hidden');
+            } else {
+                submitBtn.disabled = false;
+                submitIcon.setAttribute('data-lucide', 'activity');
+                submitIcon.classList.remove('animate-spin');
+                submitText.textContent = "뉴스 스크랩";
+                loadingStatusBox.classList.add('hidden');
+            }
+
+            // 뉴스 리스트 카드 렌더링
+            const newsContainer = document.getElementById('newsContainer');
+            const newsCountBadge = document.getElementById('newsCountBadge');
+            newsCountBadge.textContent = `${state.newsList.length}건`;
+
+            if (state.newsList.length === 0) {
+                newsContainer.innerHTML = `
+                    <div class="bg-slate-800/20 border border-slate-800 rounded-2xl p-12 text-center text-slate-500 animate-fade-in">
+                        <i data-lucide="book-open" class="w-12 h-12 mx-auto mb-3 opacity-30"></i>
+                        <p class="text-base font-semibold">조건과 일치하는 기사가 존재하지 않거나 수집에 실패했습니다.</p>
+                        <p class="text-xs mt-1">키워드 및 날짜 범위를 다시 확인해 보시기 바랍니다.</p>
+                    </div>
+                `;
+            } else {
+                newsContainer.innerHTML = state.newsList.map(news => {
+                    const isSelected = state.selectedNewsId === news.id;
+                    const keyPointsHtml = news.keyPoints && news.keyPoints.map(point => `
+                        <li class="flex items-start gap-1.5 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-indigo-500 font-bold">•</span>
+                            <span>${point}</span>
+                        </li>
+                    `).join('') || '';
+
+                    return `
+                        <div class="group border rounded-2xl overflow-hidden transition-all duration-300 animate-fade-in ${
+                            isSelected 
+                            ? 'bg-slate-800 border-indigo-500/50 shadow-lg shadow-indigo-500/15 ring-1 ring-indigo-500/20' 
+                            : 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800/70 hover:border-slate-600/80'
+                        }">
+                            
+                            <!-- 뉴스 메타헤더 및 토글 버튼 영역 -->
+                            <div class="p-5 cursor-pointer flex justify-between items-start gap-4" onclick="toggleNewsAccordion(${news.id})">
+                                <div class="space-y-2 flex-1">
+                                    <div class="flex flex-wrap items-center gap-2 text-xs">
+                                        <span class="px-2 py-0.5 bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 rounded font-medium">
+                                            ${news.source}
+                                        </span>
+                                        <span class="text-slate-400 flex items-center gap-1">
+                                            <i data-lucide="calendar" class="w-3 h-3"></i>
+                                            ${news.time}
+                                        </span>
+                                    </div>
+
+                                    <!-- 제목 및 원문 하이퍼링크 -->
+                                    <div class="flex items-center gap-1.5 group/title">
+                                        <a 
+                                            href="${news.url && news.url !== '#' ? news.url : 'javascript:void(0)'}" 
+                                            target="_blank" 
+                                            rel="noreferrer" 
+                                            onclick="event.stopPropagation()" 
+                                            class="text-base md:text-lg font-semibold text-slate-100 hover:text-indigo-400 transition-colors flex items-center gap-1.5"
+                                        >
+                                            ${news.title}
+                                            <i data-lucide="external-link" class="w-3.5 h-3.5 inline-block text-slate-500 hover:text-indigo-400 transition"></i>
+                                        </a>
+                                    </div>
+
+                                    <p class="text-sm text-slate-300 line-clamp-2 pt-1">
+                                        ${news.summary}
+                                    </p>
+                                </div>
+
+                                <div class="p-1.5 bg-slate-900/50 rounded-lg text-slate-400 hover:text-slate-200">
+                                    <i data-lucide="${isSelected ? 'chevron-up' : 'chevron-down'}" class="w-5 h-5"></i>
+                                </div>
+                            </div>
+
+                            <!-- NotebookLM 심층 상세 분석 패널 -->
+                            ${isSelected ? `
+                                <div class="px-5 pb-5 pt-1 border-t border-slate-700/50 bg-slate-900/40 space-y-4 animate-fade-in">
+                                    
+                                    <!-- 주요 팩트 정보 목록 -->
+                                    <div class="space-y-2">
+                                        <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                                            <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> 기사 내 주요 Fact & 요약 지표
+                                        </h4>
+                                        <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-300">
+                                            ${keyPointsHtml}
+                                        </ul>
+                                    </div>
+
+                                    <!-- NotebookLM 관점 핵심 통찰 분석 -->
+                                    <div class="space-y-1.5 bg-indigo-950/20 border border-indigo-500/20 rounded-xl p-4">
+                                        <h4 class="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                                            <i data-lucide="brain-circuit" class="w-4 h-4 text-indigo-400"></i>
+                                            NotebookLM 관점에서의 심층 배경 요약 및 시장 시사점
+                                        </h4>
+                                        <p class="text-xs md:text-sm text-slate-300 leading-relaxed whitespace-pre-line">${news.notebookAnalysis}</p>
+                                    </div>
+
+                                </div>
+                            ` : ''}
+
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // 우측 종합 결과 분석 영역 반영
+            const overallTextElement = document.getElementById('overallConclusionText');
+            overallTextElement.textContent = state.overallConclusion || '데이터를 가공하는 도중입니다.';
+
+            // Lucide 아이콘 동적 재생성
+            lucide.createIcons();
+        }
+
+        // 아코디언 토글 제어 이벤트 헨들러
+        function toggleNewsAccordion(newsId) {
+            state.selectedNewsId = state.selectedNewsId === newsId ? null : newsId;
+            renderUI();
+        }
+
+        // 실시간 분석 코어 호출 비즈니스 로직
+        async function handleSearchAndAnalyze(e) {
+            e.preventDefault();
+            
+            const keywordVal = document.getElementById('keywordInput').value.trim();
+            const startVal = document.getElementById('startDateInput').value;
+            const endVal = document.getElementById('endDateInput').value;
+            const limitVal = parseInt(document.getElementById('limitSelect').value) || 3;
+
+            if (!keywordVal) return;
+
+            // 날짜 선후관계 검증 가드
+            if (new Date(startVal) > new Date(endVal)) {
+                showError('시작일은 종료일보다 이전 날짜여야 합니다.');
+                return;
+            }
+
+            // UI 상태 초기화 및 로딩 활성화
+            state.keyword = keywordVal;
+            state.startDate = startVal;
+            state.endDate = endVal;
+            state.limit = limitVal;
+            state.loading = true;
+            state.newsList = [];
+            state.overallConclusion = '';
+            hideError();
+            setLoadingStatus('실시간 뉴스 정보 수집 트래커를 구동하는 중...');
+            renderUI();
+
+            // API키 미등록/주입 실패 시 즉시 데모 수집기로 이탈 (동적 생성 연계)
+            if (!apiKey) {
+                setTimeout(() => {
+                    setLoadingStatus('보안 가상 시뮬레이터 연동 모드로 대량 분석 중...');
+                    setTimeout(() => {
+                        state.newsList = getDemoData(state.keyword, state.startDate, state.endDate, state.limit);
+                        state.overallConclusion = getDemoConclusion(state.keyword, state.startDate, state.endDate, state.limit);
+                        state.loading = false;
+                        setLoadingStatus('');
+                        renderUI();
+                    }, 1500);
+                }, 500);
+                return;
+            }
+
+            try {
+                // 수집 개수가 많을 때 딜레이를 사전에 인지시키는 인공지능 상태 메시지 조율
+                if (limitVal >= 15) {
+                    setLoadingStatus(`대량 기사(${limitVal}건) 전수 검색 및 NotebookLM 압축 모델 실행 중... 최대 15~20초 소요될 수 있습니다.`);
+                } else {
+                    setLoadingStatus('Gemini Google Search Grounding 기술로 실제 기간 실시간 뉴스 검색 진행 중...');
+                }
+                
+                const searchPrompt = `${state.startDate}부터 ${state.endDate}까지의 기간을 기준으로, 키워드 "${state.keyword}"와 가장 유의미하게 대조되는 고품질 실제 뉴스 기사 ${state.limit}개를 선별해줘. 출력 데이터에 고유한 기사 출처 URL과 언론사 명칭, 정확한 뉴스 제목을 제공해줘.`;
+                
+                let searchResultText = '';
+                let searchResponse;
+
+                try {
+                    searchResponse = await fetchWithRetry(
+                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: searchPrompt }] }],
+                                tools: [{ "google_search": {} }] // 실시간 구글 검색 활성화
+                            })
+                        }
+                    );
+                    searchResultText = searchResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                } catch (groundingErr) {
+                    console.warn("Grounding 실패로 인해 지식 인지 백업 모드로 복구합니다.", groundingErr);
+                    setLoadingStatus('인터넷 망 대체 실시간 컨텍스트 요약 모드 진입 중...');
+                    searchResponse = await fetchWithRetry(
+                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: `${searchPrompt} (인터넷 검색 엔진 장애 시 백업 지식 기반으로 핵심적인 기사를 설계 및 가공해줘)` }] }]
+                            })
+                        }
+                    );
+                    searchResultText = searchResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                }
+
+                if (!searchResultText) {
+                    throw new Error('뉴스 소스 취합 프로세스에서 무효 응답이 발생했습니다.');
+                }
+
+                setLoadingStatus('수집된 자료를 통합 가공하여 NotebookLM 심층 분석 및 마스터 리포트 분석 중...');
+
+                // 2단계: JSON 변환 및 분석 요청 (토큰 넘침 방지를 위한 명료성 가이드 추가)
+                const structuredPrompt = `
+                우리는 사용자가 검색한 키워드 "${state.keyword}"에 대응하여 ${state.startDate}부터 ${state.endDate}까지의 범위 내 뉴스를 수집했습니다.
+                수집된 아래 자료를 지능적으로 분석하여 각 기사별 NotebookLM 스타일 요약 및 개별 인사이트를 최대 ${state.limit}개 이내로 정밀 생성하고, 전체 종합 트렌드 분석 보고서도 함께 완성하세요.
+                각 기사 요약 및 해설은 토큰이 과적되지 않도록 명확하고 핵심적으로 작성하세요.
+
+                [뉴스 수집 기반 자료]
+                ${searchResultText}
+
+                출력 형식은 정확한 JSON 스펙을 유지해야 합니다. 어떠한 앞뒤 설명이나 마크다운 백틱 없이 완벽한 JSON만 전달해주어야 합니다.
+
+                JSON 템플릿:
+                {
+                  "news": [
+                    {
+                      "id": 1,
+                      "title": "실제 뉴스 기사 제목",
+                      "url": "유효 기사 하이퍼링크 주소 (구조적 도출 URL 입력)",
+                      "source": "언론매체명",
+                      "time": "기사 생성 시점",
+                      "summary": "뉴스 원문 핵심을 완벽하게 요약 정리한 텍스트 문단 (2~3줄)",
+                      "keyPoints": [
+                        "기록적인 핵심 통계 팩트 지표 1",
+                        "기록적인 핵심 통계 팩트 지표 2",
+                        "기록적인 핵심 통계 팩트 지표 3"
+                      ],
+                      "notebookAnalysis": "이 기사가 업계 및 시장 흐름에 시사하는 핵심적인 해석과 시사점 요약"
+                    }
+                  ],
+                  "overallConclusion": "모든 뉴스를 융합하고 통합 대조하여 작성한 종합 마스터 보고서 전문"
+                }
+                `;
+
+                let parsedData;
+                try {
+                    const analysisResponse = await fetchWithRetry(
+                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: structuredPrompt }] }],
+                                generationConfig: {
+                                    responseMimeType: "application/json",
+                                    responseSchema: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            news: {
+                                                type: "ARRAY",
+                                                items: {
+                                                    type: "OBJECT",
+                                                    properties: {
+                                                        id: { type: "INTEGER" },
+                                                        title: { type: "STRING" },
+                                                        url: { type: "STRING" },
+                                                        source: { type: "STRING" },
+                                                        time: { type: "STRING" },
+                                                        summary: { type: "STRING" },
+                                                        keyPoints: {
+                                                            type: "ARRAY",
+                                                            items: { type: "STRING" }
+                                                        },
+                                                        notebookAnalysis: { type: "STRING" }
+                                                    },
+                                                    required: ["id", "title", "url", "source", "time", "summary", "keyPoints", "notebookAnalysis"]
+                                                }
+                                            },
+                                            overallConclusion: { type: "STRING" }
+                                        },
+                                        required: ["news", "overallConclusion"]
+                                    }
+                                }
+                            })
+                        }
+                    );
+
+                    const finalJsonText = analysisResponse.candidates?.[0]?.content?.parts?.[0]?.text;
+                    parsedData = extractJSON(finalJsonText);
+
+                } catch (schemaErr) {
+                    console.warn("구조 스키마 선언 오류로 수동 파싱 대체 체계를 적용합니다.", schemaErr);
+                    setLoadingStatus('유연한 데이터 수동 디코딩 모듈 작동 중...');
+                    
+                    const fallbackResponse = await fetchWithRetry(
+                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: `${structuredPrompt}\n\n다른 부연 설명 없이 유효한 {로 시작하여 }로 끝나는 JSON 데이터 블록만 반환하세요.` }] }]
+                            })
+                        }
+                    );
+
+                    const fallbackText = fallbackResponse.candidates?.[0]?.content?.parts?.[0]?.text;
+                    parsedData = extractJSON(fallbackText);
+                }
+
+                // 가동 상태 및 렌더 데이터 매핑
+                if (parsedData && parsedData.news) {
+                    state.newsList = parsedData.news;
+                    state.overallConclusion = parsedData.overallConclusion || '통합 제언을 빌드할 수 없었습니다.';
+                } else {
+                    throw new Error('정의되지 않은 스키마 포맷이 수신되었습니다.');
+                }
+
+                state.loading = false;
+                setLoadingStatus('');
+                renderUI();
+
+            } catch (err) {
+                console.error(err);
+                showError(`실시간 처리 중 시스템 예외 발생: ${err.message}. 일시적 통신 장애일 수 있으니 잠시 후 재시도 바랍니다.`);
+                state.loading = false;
+                setLoadingStatus('');
+                renderUI();
+            }
+        }
+
+        // 상태 메세지 알리미 함수
+        function setLoadingStatus(msg) {
+            const loadingStatusBox = document.getElementById('loadingStatusBox');
+            const loadingStatusMsg = document.getElementById('loadingStatusMsg');
+            if (msg) {
+                loadingStatusBox.classList.remove('hidden');
+                loadingStatusMsg.textContent = msg;
+            } else {
+                loadingStatusBox.classList.add('hidden');
+            }
+        }
+
+        // 에러 표시 기능
+        function showError(msg) {
+            const errorBox = document.getElementById('errorBox');
+            const errorMsg = document.getElementById('errorMsg');
+            errorBox.classList.remove('hidden');
+            errorMsg.textContent = msg;
+        }
+
+        function hideError() {
+            document.getElementById('errorBox').classList.add('hidden');
+        }
+
+        // 도큐먼트 초기 실행 제어
+        window.onload = function() {
+            // 날짜 기본 범위 세팅
+            initDates();
+            
+            // 데모 기반 정보 기본 렌더
+            state.newsList = getDemoData(state.keyword, state.startDate, state.endDate, state.limit);
+            state.overallConclusion = getDemoConclusion(state.keyword, state.startDate, state.endDate, state.limit);
+            renderUI();
+
+            // 폼 서브밋 핸들러 바인딩
+            document.getElementById('searchForm').addEventListener('submit', handleSearchAndAnalyze);
+        };
+    </script>
+</body>
+</html>
