@@ -55,17 +55,66 @@
                 </div>
             </div>
 
-            <div class="flex items-center gap-2">
-                <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    실시간 AI 엔진 대기중
+            <!-- 상태 인디케이터 및 API 설정 토글 -->
+            <div class="flex items-center gap-3 flex-wrap">
+                <span id="statusIndicator" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                    <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                    가상 체험 모드 작동중
                 </span>
+                <button 
+                    id="toggleApiBtn"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 transition"
+                >
+                    <i data-lucide="key" class="w-3.5 h-3.5"></i>
+                    API 키 설정
+                </button>
             </div>
         </div>
     </header>
 
     <!-- 메인 뷰포트 -->
     <main class="flex-grow max-w-7xl mx-auto w-full px-4 py-6 lg:px-8 space-y-6">
+
+        <!-- API 키 설정 패널 (접이식) -->
+        <div id="apiKeyPanel" class="hidden bg-slate-800/80 border border-slate-700/60 rounded-2xl p-5 shadow-xl animate-fade-in space-y-3">
+            <div class="flex items-start gap-3">
+                <div class="p-2.5 bg-slate-900 rounded-xl text-indigo-400">
+                    <i data-lucide="key" class="w-5 h-5"></i>
+                </div>
+                <div class="flex-1 space-y-1">
+                    <h3 class="font-bold text-sm text-slate-200">구글 Gemini API 키 등록 (Vercel 및 외부 배포용)</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        실제 구글 환경에서 뉴스를 실시간으로 검색하고 분석하려면 본인의 <strong class="text-indigo-400">Gemini API 키</strong>가 필요합니다. 
+                        입력된 키는 오직 브라우저 로컬 저장소에 안전하게 보관되며, 그 어떠한 외부 서버로도 무단 전송되지 않습니다.
+                    </p>
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2 pt-2">
+                <input 
+                    type="password" 
+                    id="apiKeyInput" 
+                    placeholder="AIzaSy... 형식의 Gemini API 키를 입력해 주세요."
+                    class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 text-slate-100 placeholder-slate-500 transition-all"
+                />
+                <div class="flex gap-2">
+                    <button 
+                        id="saveKeyBtn"
+                        class="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition flex items-center gap-1.5 shrink-0"
+                    >
+                        <i data-lucide="check" class="w-4 h-4"></i> 키 저장
+                    </button>
+                    <button 
+                        id="clearKeyBtn"
+                        class="px-4 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl text-sm font-semibold transition flex items-center gap-1.5 shrink-0"
+                    >
+                        삭제
+                    </button>
+                </div>
+            </div>
+            <p class="text-[11px] text-slate-500">
+                키가 없는 경우 무료로 <a href="https://aistudio.google.com/" target="_blank" class="text-indigo-400 hover:underline">Google AI Studio</a>에서 발급받거나, 공란으로 두고 가상의 지능형 데모 모드로 사용해 볼 수 있습니다.
+            </p>
+        </div>
 
         <!-- 대시보드 제어반 카드 -->
         <div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5 shadow-lg">
@@ -117,7 +166,7 @@
                     />
                 </div>
 
-                <!-- 수집 개수 지정 컴포넌트 추가 -->
+                <!-- 수집 개수 지정 컴포넌트 -->
                 <div class="md:col-span-2 space-y-1.5">
                     <label class="text-xs font-medium text-slate-400 flex items-center gap-1.5">
                         <i data-lucide="sliders" class="w-3.5 h-3.5 text-indigo-400"></i> 수집 개수 설정
@@ -227,17 +276,15 @@
     <!-- 푸터 -->
     <footer class="border-t border-slate-800/80 bg-slate-950 mt-16 py-8 px-4 text-center text-xs text-slate-500">
         <div class="max-w-7xl mx-auto space-y-2">
-            <p>© 2026 NewsBrief LM. Powered by Gemini Core and Grounding Search Engine.</p>
-            <p>본 플랫폼은 실시간 웹 크롤링 및 인공지능 분석 기법을 융합한 차세대 미디어 서비스입니다.</p>
+          <p>© 2026 NewsBrief LM. Powered by Gemini Core and Grounding Search Engine.</p>
+          <p>이 서비스는 구글 검색과 실시간 파싱을 통한 최신성 기반 리서치 대시보드 도구입니다.</p>
         </div>
     </footer>
 
     <script>
-        // 플랫폼 런타임에 의해 API 키가 자동으로 주입됩니다.
-        const apiKey = "";
-
         // 상태 데이터 관리 객체
         const state = {
+            apiKey: localStorage.getItem('gemini_api_key') || '',
             keyword: '인공지능 AI',
             startDate: '',
             endDate: '',
@@ -248,7 +295,7 @@
             selectedNewsId: null
         };
 
-        // 초기 날짜 생성 함수 (시작일: 7일전, 종료일: 오늘)
+        // 초기 날짜 설정 (시작일: 7일전, 종료일: 오늘)
         function initDates() {
             const today = new Date();
             const lastWeek = new Date();
@@ -355,6 +402,17 @@
 
         // UI 컴포넌트 갱신 렌더러
         function renderUI() {
+            // API 키 여부에 따른 상태창 조절
+            const indicator = document.getElementById('statusIndicator');
+            if (state.apiKey) {
+                indicator.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                indicator.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>실시간 구글 뉴스 수집 중`;
+                document.getElementById('apiKeyInput').value = state.apiKey;
+            } else {
+                indicator.className = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20";
+                indicator.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>가상 체험 모드 작동중`;
+            }
+
             // 로딩 처리 UI 토글
             const submitBtn = document.getElementById('submitBtn');
             const submitIcon = document.getElementById('submitIcon');
@@ -489,7 +547,7 @@
 
         // 실시간 분석 코어 호출 비즈니스 로직
         async function handleSearchAndAnalyze(e) {
-            e.preventDefault();
+            if (e) e.preventDefault();
             
             const keywordVal = document.getElementById('keywordInput').value.trim();
             const startVal = document.getElementById('startDateInput').value;
@@ -517,7 +575,7 @@
             renderUI();
 
             // API키 미등록/주입 실패 시 즉시 데모 수집기로 이탈 (동적 생성 연계)
-            if (!apiKey) {
+            if (!state.apiKey) {
                 setTimeout(() => {
                     setLoadingStatus('보안 가상 시뮬레이터 연동 모드로 대량 분석 중...');
                     setTimeout(() => {
@@ -546,7 +604,7 @@
 
                 try {
                     searchResponse = await fetchWithRetry(
-                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${state.apiKey}`,
                         {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -561,7 +619,7 @@
                     console.warn("Grounding 실패로 인해 지식 인지 백업 모드로 복구합니다.", groundingErr);
                     setLoadingStatus('인터넷 망 대체 실시간 컨텍스트 요약 모드 진입 중...');
                     searchResponse = await fetchWithRetry(
-                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${state.apiKey}`,
                         {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -615,7 +673,7 @@
                 let parsedData;
                 try {
                     const analysisResponse = await fetchWithRetry(
-                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${state.apiKey}`,
                         {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -663,7 +721,7 @@
                     setLoadingStatus('유연한 데이터 수동 디코딩 모듈 작동 중...');
                     
                     const fallbackResponse = await fetchWithRetry(
-                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${state.apiKey}`,
                         {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -721,6 +779,39 @@
         function hideError() {
             document.getElementById('errorBox').classList.add('hidden');
         }
+
+        // API 설정 버튼 바인딩
+        document.getElementById('toggleApiBtn').addEventListener('click', () => {
+            const panel = document.getElementById('apiKeyPanel');
+            panel.classList.toggle('hidden');
+        });
+
+        // API 키 저장 핸들러
+        document.getElementById('saveKeyBtn').addEventListener('click', () => {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            if (key) {
+                state.apiKey = key;
+                localStorage.setItem('gemini_api_key', key);
+                document.getElementById('apiKeyPanel').classList.add('hidden');
+                renderUI();
+                // 자동 재생성 실행
+                handleSearchAndAnalyze();
+            } else {
+                showError('올바른 Gemini API 키를 입력해 주세요.');
+            }
+        });
+
+        // API 키 삭제 핸들러
+        document.getElementById('clearKeyBtn').addEventListener('click', () => {
+            state.apiKey = '';
+            localStorage.removeItem('gemini_api_key');
+            document.getElementById('apiKeyInput').value = '';
+            renderUI();
+            // 가상 모드로 초기화
+            state.newsList = getDemoData(state.keyword, state.startDate, state.endDate, state.limit);
+            state.overallConclusion = getDemoConclusion(state.keyword, state.startDate, state.endDate, state.limit);
+            renderUI();
+        });
 
         // 도큐먼트 초기 실행 제어
         window.onload = function() {
